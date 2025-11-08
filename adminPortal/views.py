@@ -1,6 +1,7 @@
 from django.http import JsonResponse, HttpResponse
 from .models import productModel, productImageModel, productManagementModel, cartModel
 from .constants import productFields
+from django.db.models import Sum
 import  xlwt
 
 
@@ -25,7 +26,7 @@ def product(request):
                 }
                 product.append(productData)            
             return JsonResponse(list(product), safe=False, status = 200)
-        else:return JsonResponse({'msg' : 'Please Login with admin credentials'}, status =400)
+        else:return JsonResponse({'msg' : 'Please Login'}, status =400)
 
     elif request.method == 'POST':
         if request.user.is_authenticated and request.user.is_staff:
@@ -66,8 +67,6 @@ def updateProduct(request):
             if message == None:
                 return JsonResponse({'msg': 'Please tell which product you want to update'}, status =200)
             data = request.POST
-            print(data.get('productCategory'))
-            print(type(data.get('productCategory')))
             if len(images) == 0:
                 return JsonResponse({'msg': 'Please send images of the product'}, status =400)
             if len(images) > 3:
@@ -183,3 +182,11 @@ def download_excel_data(request):
 		ws.write(row_num, 3, my_row.cart.productQuantity, font_style);ws.write(row_num, 4, my_row.cart.user.first_name + " " + my_row.cart.user.last_name, font_style);ws.write(row_num, 5, my_row.cart.user.phoneNo, font_style);ws.write(row_num, 6, my_row.cart.productId.productTitle, font_style)
 	wb.save(response)
 	return response
+
+def dashboard(request):
+    if request.method == 'GET':
+        if request.user.is_authenticated and request.user.is_staff:
+            data = productManagementModel.objects.aggregate(Sum('price'))
+            return JsonResponse(data , status = 200)
+        else:return JsonResponse({'msg' : 'Please Login with admin credentials'}, status =400)
+    else:return JsonResponse({"msg":"Invalid Method"} ,status = 405) 

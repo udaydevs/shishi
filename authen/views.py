@@ -52,7 +52,7 @@ def signIn(request):
         if ('email' not in (data.keys()) or 'password' not in (data.keys())):
             return JsonResponse({"msg" : "Please give me all the required fields"}, status = 400)
         if request.user.is_authenticated:
-            return JsonResponse({"msg":"Already Logged In "}, status = 409) 
+            return JsonResponse({"msg":"Already Logged In "}, status = 400) 
         user = authenticate(request, email = data.get('email') , password = data.get('password'))
         if user is not None: 
             login(request,user)   
@@ -77,7 +77,9 @@ def profile(request):
                 if(user.exists() == False):
                     return JsonResponse({'msg' : 'User doesnot exist'}, status = 404)
                 data = request.POST
-                images = request.FILES.get('profilePhoto')
+                image = request.FILES.getlist('profilePhoto')
+                if len(image)> 1:
+                    return JsonResponse({'msg' : 'You can only upload one image'}, status = 400)
                 if not request.FILES['profilePhoto'].content_type in ['image/png','image/jpeg','image/jpg']:
                     return JsonResponse({'msg' : 'Image should have a valid format'},status = 400)
                 if not data.get('gender') in ['0','1','2']:
@@ -90,7 +92,10 @@ def profile(request):
                 user.phoneNo = data.get('phoneNo')
                 user.gender = data.get('gender')
                 user.save()
-                userImageModel.objects.update_or_create(userId = request.user, profilePhoto = images)
+                userImage, created = userImageModel.objects.get_or_create(userId = request.user)
+                for img in image:
+                    userImage.profilePhoto = img
+                    userImage.save()
                 return JsonResponse({"msg" : "Updated Successfully"}, status = 200)
             else:return JsonResponse({'msg' : 'Please Log In'}, status = 401)
         else: return JsonResponse({'msg' : "Invalid Json Format"} , status= 400)

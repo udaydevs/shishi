@@ -68,10 +68,19 @@ def buyProducts(request):
 def orderHistory(request):
     if request.method == 'GET':
         if request.user.is_authenticated:
-            history = productManagementModel.objects.filter(cart__user  = request.user, cart__purchased = True)
+            history = productManagementModel.objects.all().filter(cart__user  = request.user, cart__purchased = True)
             if history.exists():
-                history = history.values('cart__productId','price', 'created_at', 'cart__productQuantity', 'cart__cartStatus')
-                return JsonResponse(list(history),safe=False, status = 200)
+                product = []
+                for item in history:
+                    productData  =  {
+                        'productTitle': item.cart.productId.productTitle,
+                        'productDescription': item.cart.productId.productDescription,
+                        'productQuantity' : item.cart.productQuantity,
+                        'productId' : item.cart.productId.id,
+                    }
+                    product.append(productData)
+                print(product)
+                return JsonResponse(list(product),safe=False, status = 200)
             else:return JsonResponse({'msg':'Order history is empty'}, status = 200)
         else:return JsonResponse({'msg' : 'Please login'}, status = 401)
     else:return JsonResponse({'msg': 'Invalid Method'}, status = 400)
