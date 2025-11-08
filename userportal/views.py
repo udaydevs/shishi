@@ -77,6 +77,9 @@ def orderHistory(request):
                         'productDescription': item.cart.productId.productDescription,
                         'productQuantity' : item.cart.productQuantity,
                         'productId' : item.cart.productId.id,
+                        'productPrice' : item.price,
+                        'createdAt':item.created_at,
+                        'productStatus': cartModel.Status(item.cart.cartStatus).label
                     }
                     product.append(productData)
                 print(product)

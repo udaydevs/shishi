@@ -161,27 +161,33 @@ def orderManagement(request):
     else:return JsonResponse({"msg":"Invalid Method"} ,status = 405) 
 
 def download_excel_data(request):
-	response = HttpResponse(content_type='application/ms-excel')
-	response['Content-Disposition'] = 'attachment; filename="Report.xls"'
-	wb = xlwt.Workbook(encoding='utf-8')
-	ws = wb.add_sheet("sheet1")
-	row_num = 0
-	font_style = xlwt.XFStyle()
-	font_style.font.bold = True
-	columns = ['User', 'created_at', ' Price', 'Quantity', 'Name', 'Phone No.' , 'Product']
-	for col_num in range(len(columns)):
-		ws.write(row_num, col_num, columns[col_num], font_style)
-	font_style = xlwt.XFStyle()
-    
-	data = productManagementModel.objects.all() 
-	for my_row in data:
-		row_num = row_num + 1
-		ws.write(row_num, 0, my_row.cart.user.email, font_style)
-		ws.write(row_num, 1, my_row.cart.added_at,  xlwt.easyxf(num_format_str='D-MMM-YY'))
-		ws.write(row_num, 2, my_row.cart.productId.productPrice, font_style)
-		ws.write(row_num, 3, my_row.cart.productQuantity, font_style);ws.write(row_num, 4, my_row.cart.user.first_name + " " + my_row.cart.user.last_name, font_style);ws.write(row_num, 5, my_row.cart.user.phoneNo, font_style);ws.write(row_num, 6, my_row.cart.productId.productTitle, font_style)
-	wb.save(response)
-	return response
+    response = HttpResponse(content_type='application/ms-excel')
+    response['Content-Disposition'] = 'attachment; filename="Report.xls"'
+    wb = xlwt.Workbook(encoding='utf-8')
+    ws = wb.add_sheet("sheet1")
+
+    columns = ['User', 'Created At', 'Price', 'Quantity', 'Name', 'Phone No.', 'Product']
+    font_style = xlwt.XFStyle()
+    font_style.font.bold = True
+
+    for col_num, col_name in enumerate(columns):
+        ws.write(0, col_num, col_name, font_style)
+
+    rows = productManagementModel.objects.select_related('cart__user', 'cart__productId').all()
+    row_num = 0
+    for row in rows:
+        row_num += 1
+        user = row.cart.user
+        ws.write(row_num, 0, user.email)
+        ws.write(row_num, 1, row.cart.added_at.strftime("%d-%b-%Y"))
+        ws.write(row_num, 2, row.cart.productId.productPrice)
+        ws.write(row_num, 3, row.cart.productQuantity)
+        ws.write(row_num, 4, f"{user.first_name} {user.last_name}")
+        ws.write(row_num, 5, getattr(user, 'phoneNo', 'N/A'))
+        ws.write(row_num, 6, row.cart.productId.productTitle)
+
+    wb.save(response)
+    return response
 
 def dashboard(request):
     if request.method == 'GET':
