@@ -2,7 +2,7 @@ from django.http import JsonResponse
 from django.contrib.auth import authenticate, login, logout
 from .models import  CustomUser, userImageModel
 from .functions import check_regex
-from .constants import mailRegex, passRegex, dataFields, updateDataFields
+from .constants import mailRegex, passRegex,phoneNumberRegex ,dataFields, updateDataFields
 import json
 
 def signUp(request):
@@ -22,11 +22,16 @@ def signUp(request):
             return JsonResponse({ "msg" : "Confirm password should be same as password or confirm password field is missing"}, status = 400)
         if not data.get('gender') in ['0','1','2']:
              return JsonResponse({"msg" : "Gender choice does not match"}, status = 400)
+        if  ((check_regex(phoneNumberRegex, data.get('phoneNo')) is None)):
+            return JsonResponse({"msg" : "Use valid pattern Password  (Make sure you are giving all the required field)"}, status = 400)
+        if len(request.FILES.getlist('ProfilePhoto')) > 1:
+            return JsonResponse({'msg' : 'Image should not more than 1'},status = 400)
         if not request.FILES['profilePhoto'].content_type in ['image/png','image/jpeg','image/jpg']:
             return JsonResponse({'msg' : 'Image should have a valid format'},status = 400)
         if (CustomUser.objects.filter(email = data.get('email')).exists()):
             return JsonResponse({"msg" : "User already exists"},status = 409) 
         else:
+
             user = CustomUser(
                 email=data.get('email'),
                 phoneNo = data.get('phoneNo'),
@@ -36,11 +41,11 @@ def signUp(request):
             user.set_password(data.get('password')) 
             if data.get('lastName'):
                 user.last_name = data.get('lastName')    
-            user.save()     
+            user.save()
+
             for img in request.FILES.getlist('profilePhoto'):
                 userImageModel.objects.create(profilePhoto = img, userId = user)
             return JsonResponse({"msg" : "User Created Successfully"}, status = 201)
-    
     else:
            return JsonResponse({"msg":"Invalid Method"} ,status = 405) 
 
@@ -77,11 +82,6 @@ def profile(request):
                 if(user.exists() == False):
                     return JsonResponse({'msg' : 'User doesnot exist'}, status = 404)
                 data = request.POST
-                image = request.FILES.getlist('profilePhoto')
-                if len(image)> 1:
-                    return JsonResponse({'msg' : 'You can only upload one image'}, status = 400)
-                if not request.FILES['profilePhoto'].content_type in ['image/png','image/jpeg','image/jpg']:
-                    return JsonResponse({'msg' : 'Image should have a valid format'},status = 400)
                 if not data.get('gender') in ['0','1','2']:
                     return JsonResponse({"msg" : "Gender choice does not match"}, status = 400)
                 user = CustomUser.objects.get(email = request.user)
@@ -92,10 +92,16 @@ def profile(request):
                 user.phoneNo = data.get('phoneNo')
                 user.gender = data.get('gender')
                 user.save()
-                userImage, created = userImageModel.objects.get_or_create(userId = request.user)
-                for img in image:
-                    userImage.profilePhoto = img
-                    userImage.save()
+                image = request.FILES.getlist('profilePhoto')
+                if not len(image) == 0:
+                    if len(image)> 1:
+                        return JsonResponse({'msg' : 'You can only upload one image'}, status = 400)
+                    if not image[0].content_type in ['image/png','image/jpeg','image/jpg']:
+                        return JsonResponse({'msg' : 'Image should have a valid format'},status = 400)
+                    userImage, created = userImageModel.objects.get_or_create(userId = request.user)
+                    for img in image:
+                        userImage.profilePhoto = img
+                        userImage.save()
                 return JsonResponse({"msg" : "Updated Successfully"}, status = 200)
             else:return JsonResponse({'msg' : 'Please Log In'}, status = 401)
         else: return JsonResponse({'msg' : "Invalid Json Format"} , status= 400)

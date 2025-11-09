@@ -1,6 +1,5 @@
 from django.http import JsonResponse
-from adminPortal.models import cartModel, productModel, productManagementModel
-import json
+from adminPortal.models import cartModel, productModel, productManagementModel, productImageModel
 
 def addToCart(request):
     if request.method == 'POST':
@@ -87,3 +86,23 @@ def orderHistory(request):
             else:return JsonResponse({'msg':'Order history is empty'}, status = 200)
         else:return JsonResponse({'msg' : 'Please login'}, status = 401)
     else:return JsonResponse({'msg': 'Invalid Method'}, status = 400)
+
+def newArrivals(request):
+    if request.method == 'GET':
+        product = []
+        productData = productModel.objects.filter(isDeleted = False)
+        for item in productData[:5:]:
+            productData = {
+                'id':item.id,
+                'productCategory':productModel.Category(item.productCategory).label,
+                'productTitle': item.productTitle,
+                'productDescription': item.productDescription,
+                'productPrice': item.productPrice,
+                'productStock': item.productStock,
+                'productImage':[img['productImage'] for img in productImageModel.objects.filter(productId=item.id).values('productImage')],            
+            }
+            product.append(productData) 
+            if len(product) > 4:
+                break           
+        return JsonResponse(list(product), safe=False, status = 200)
+    else:return JsonResponse({'msg' : 'Please Login'}, status =400)

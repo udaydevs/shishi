@@ -1,7 +1,8 @@
 from django.http import JsonResponse, HttpResponse
 from .models import productModel, productImageModel, productManagementModel, cartModel
+from authen.models import CustomUser
 from .constants import productFields
-from django.db.models import Sum
+from django.db.models import Sum,Count
 import  xlwt
 
 
@@ -32,12 +33,16 @@ def product(request):
         if request.user.is_authenticated and request.user.is_staff:
             data = request.POST
             image = request.FILES.getlist('productImage')
+            if len(data.get('productTitle'))> 50:
+                return JsonResponse({'msg': 'Title is too long'}, status =400)
             if len(image) == 0:
                 return JsonResponse({'msg': 'Please send images of the product'}, status =400)
             if len(image) > 3:
                 return JsonResponse({'msg': 'Not more than 3 images are allowed'}, status =400)
             if not request.FILES['productImage'].content_type in ['image/png','image/jpeg','image/jpg']:
-                return JsonResponse({'msg' : 'Image should have a valid format'},status = 400)
+                return JsonResponse({'msg' : 'Image should have a valid format(jpg, png, jpeg) '},status = 400)
+            if int(data.get('productPrice')) < 1:
+                return JsonResponse({'msg' : 'Minimum product value should be more than $1'}, status = 400)
             if not data.get('productCategory') in ['0','1','2','3']:
                 return JsonResponse({'msg': 'Please select a valid category'}, status =400)
             productInstance = productModel.objects.create(
@@ -161,38 +166,50 @@ def orderManagement(request):
     else:return JsonResponse({"msg":"Invalid Method"} ,status = 405) 
 
 def download_excel_data(request):
-    response = HttpResponse(content_type='application/ms-excel')
-    response['Content-Disposition'] = 'attachment; filename="Report.xls"'
-    wb = xlwt.Workbook(encoding='utf-8')
-    ws = wb.add_sheet("sheet1")
+    if request.method == 'GET':
+        if request.user.is_authenticated and request.user.is_staff:
+            response = HttpResponse(content_type='application/ms-excel')
+            response['Content-Disposition'] = 'attachment; filename="Report.xls"'
+            wb = xlwt.Workbook(encoding='utf-8')
+            ws = wb.add_sheet("sheet1")
 
-    columns = ['User', 'Created At', 'Price', 'Quantity', 'Name', 'Phone No.', 'Product']
-    font_style = xlwt.XFStyle()
-    font_style.font.bold = True
+            columns = ['Name','User','Phone No.','Product', 'Quantity', 'Price', 'Created At',]
+            font_style = xlwt.XFStyle()
+            font_style.font.bold = True
 
-    for col_num, col_name in enumerate(columns):
-        ws.write(0, col_num, col_name, font_style)
+            for col_num, col_name in enumerate(columns):
+                ws.write(0, col_num, col_name, font_style)
 
-    rows = productManagementModel.objects.select_related('cart__user', 'cart__productId').all()
-    row_num = 0
-    for row in rows:
-        row_num += 1
-        user = row.cart.user
-        ws.write(row_num, 0, user.email)
-        ws.write(row_num, 1, row.cart.added_at.strftime("%d-%b-%Y"))
-        ws.write(row_num, 2, row.cart.productId.productPrice)
-        ws.write(row_num, 3, row.cart.productQuantity)
-        ws.write(row_num, 4, f"{user.first_name} {user.last_name}")
-        ws.write(row_num, 5, getattr(user, 'phoneNo', 'N/A'))
-        ws.write(row_num, 6, row.cart.productId.productTitle)
-
-    wb.save(response)
-    return response
+            rows = productManagementModel.objects.all()
+            row_num = 0
+            for row in rows:
+                row_num += 1
+                user = row.cart.user
+                ws.write(row_num, 0, f"{user.first_name} {user.last_name}")
+                ws.write(row_num, 1, user.email)
+                ws.write(row_num, 2, row.cart.user.phoneNo)
+                ws.write(row_num, 3, row.cart.productId.productTitle)
+                ws.write(row_num, 4, row.cart.productQuantity)
+                ws.write(row_num, 5, row.price)
+                ws.write(row_num, 6, row.cart.added_at ,xlwt.easyxf(num_format_str='DD-MMM-YY'))
+            wb.save(response)
+            return response
+        else:return JsonResponse({'msg' : 'Please Login with admin credentials'}, status =400)
+    else:return JsonResponse({"msg":"Invalid Method"} ,status = 405) 
 
 def dashboard(request):
     if request.method == 'GET':
         if request.user.is_authenticated and request.user.is_staff:
-            data = productManagementModel.objects.aggregate(Sum('price'))
+            d = productManagementModel.objects.all()
+            data = {
+                'totalDispatched' : d.filter(cart__cartStatus = 1).aggregate(totalDispatched = Count('id')),
+                'totalPlaced' : d.filter(cart__cartStatus = 0).aggregate(totalPlaced = Count('id')),
+                'totalDelievered' : d.filter(cart__cartStatus = 3).aggregate(totalDelievered = Count('id')),
+                'totalShipped' : d.filter(cart__cartStatus = 2).aggregate(totalShipped = Count('id')),
+                'totalUsers': CustomUser.objects.all().aggregate(totalUsers = Count('id')),
+                'totalOrders': d.aggregate(totalOrders = Count('id')),
+                'totalRevenue' : d.aggregate(totalRevenue = Sum('price')),
+            }
             return JsonResponse(data , status = 200)
         else:return JsonResponse({'msg' : 'Please Login with admin credentials'}, status =400)
     else:return JsonResponse({"msg":"Invalid Method"} ,status = 405) 
