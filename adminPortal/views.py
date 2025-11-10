@@ -9,12 +9,12 @@ import  xlwt
 def product(request):
     if request.method == 'GET':
         if request.user.is_authenticated:
-            message = request.GET.get('category')
+            category = request.GET.get('category')
             product = []
-            if  message in ['0','1','2','3']:
-                productData = productModel.objects.filter( productCategory = message, isDeleted = False)
+            if  category in ['0','1','2','3']:
+                productData = productModel.objects.filter( productCategory = category, isDeleted = False).order_by('created_at')
             else:
-                productData = productModel.objects.filter(isDeleted = False)
+                productData = productModel.objects.filter(isDeleted = False).order_by('created_at')
             for item in productData:
                 productData = {
                     'id':item.id,
@@ -63,13 +63,13 @@ def product(request):
 def updateProduct(request):
     if request.method == 'POST':
         if not request.body:
-            return JsonResponse({"msg" : "Please Use the proper json format to send the data"}, status = 400)
+            return JsonResponse({"msg" : "Please use the proper json format to send the data"}, status = 400)
         if request.user.is_authenticated and request.user.is_staff:
-            message = request.GET.get('id')
+            id = request.GET.get('id')
             images = request.FILES.getlist('productImage')
             print(images)
             print(len(images))
-            if message == None:
+            if id == None:
                 return JsonResponse({'msg': 'Please tell which product you want to update'}, status =200)
             data = request.POST
             if len(images) == 0:
@@ -80,11 +80,11 @@ def updateProduct(request):
                 return JsonResponse({'msg' : 'Image should have a valid format'},status = 400)
             if not data.get('productCategory') in ['0','1','2','3']:
                 return JsonResponse({'msg': 'Please select a valid category'}, status =400)
-            product = productModel.objects.filter(user = request.user, id = message)
+            product = productModel.objects.filter(user = request.user, id = id)
             if(product.exists() == False):
                 return JsonResponse({'msg' : 'Product with this id doesnot exist'}, status = 404)
             updateFields = list(data.keys())
-            product = productModel.objects.get(id = message, user = request.user)
+            product = productModel.objects.get(id = id, user = request.user)
             product.productTitle = data.get('productTitle')
             product.productDescription = data.get('productDescription')
             product.productPrice = data.get('productPrice')

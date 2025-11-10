@@ -12,6 +12,8 @@ class productModel(models.Model):
     productDescription = models.TextField(max_length=600)
     productPrice = models.IntegerField()
     productStock = models.IntegerField()
+    created_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
     isDeleted = models.BooleanField(default=False)
     productCategory =  models.PositiveSmallIntegerField(
         choices=Category.choices,
