@@ -1,9 +1,11 @@
 from django.http import JsonResponse
 from django.contrib.auth import authenticate, login, logout
+from adminPortal.decorators import user_type, allowed_methods
 from .models import  CustomUser, userImageModel
 from .functions import check_regex
 from .constants import mailRegex, passRegex,phoneNumberRegex ,dataFields, updateDataFields
 import json
+
 
 def signUp(request):
     if request.method == 'GET':
@@ -116,3 +118,4 @@ def profile(request):
         else:return JsonResponse({"msg" : "Please Log In "},status = 401)
 
     else:return JsonResponse({"msg" : "Invalid Method"}, status= 405)      
+

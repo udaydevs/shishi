@@ -2,9 +2,9 @@ from django.http import JsonResponse, HttpResponse
 from .models import productModel, productImageModel, productManagementModel, cartModel
 from authen.models import CustomUser
 from .constants import productFields
+from .decorators import user_type, allowed_methods
 from django.db.models import Sum,Count
 import  xlwt
-
 
 def product(request):
     if request.method == 'GET':
@@ -12,9 +12,9 @@ def product(request):
             category = request.GET.get('category')
             product = []
             if  category in ['0','1','2','3']:
-                productData = productModel.objects.filter( productCategory = category, isDeleted = False).order_by('created_at')
+                productData = productModel.objects.filter( productCategory = category, isDeleted = False).order_by('-created_at')
             else:
-                productData = productModel.objects.filter(isDeleted = False).order_by('created_at')
+                productData = productModel.objects.filter(isDeleted = False).order_by('-created_at')
             for item in productData:
                 productData = {
                     'id':item.id,
@@ -27,7 +27,7 @@ def product(request):
                 }
                 product.append(productData)            
             return JsonResponse(list(product), safe=False, status = 200)
-        else:return JsonResponse({'msg' : 'Please Login'}, status =400)
+        else:return JsonResponse({'msg' : 'Please Sign In'}, status =400)
 
     elif request.method == 'POST':
         if request.user.is_authenticated and request.user.is_staff:
@@ -36,7 +36,7 @@ def product(request):
             if len(data.get('productTitle'))> 50:
                 return JsonResponse({'msg': 'Title is too long'}, status =400)
             if len(image) == 0:
-                return JsonResponse({'msg': 'Please send images of the product'}, status =400)
+                return JsonResponse({'msg': 'Images are required'}, status =400)
             if len(image) > 3:
                 return JsonResponse({'msg': 'Not more than 3 images are allowed'}, status =400)
             if not request.FILES['productImage'].content_type in ['image/png','image/jpeg','image/jpg']:
@@ -60,73 +60,63 @@ def product(request):
 
     else:return JsonResponse({"msg":"Invalid Method"} ,status = 405) 
 
+@allowed_methods(['POST'])
+@user_type('admin')
 def updateProduct(request):
-    if request.method == 'POST':
-        if not request.body:
-            return JsonResponse({"msg" : "Please use the proper json format to send the data"}, status = 400)
-        if request.user.is_authenticated and request.user.is_staff:
-            id = request.GET.get('id')
-            images = request.FILES.getlist('productImage')
-            print(images)
-            print(len(images))
-            if id == None:
-                return JsonResponse({'msg': 'Please tell which product you want to update'}, status =200)
-            data = request.POST
-            if len(images) == 0:
-                return JsonResponse({'msg': 'Please send images of the product'}, status =400)
-            if len(images) > 3:
-                return JsonResponse({'msg': 'Not more than 3 images are allowed'}, status =400)
-            if not request.FILES['productImage'].content_type in ['image/png','image/jpeg','image/jpg']:
-                return JsonResponse({'msg' : 'Image should have a valid format'},status = 400)
-            if not data.get('productCategory') in ['0','1','2','3']:
-                return JsonResponse({'msg': 'Please select a valid category'}, status =400)
-            product = productModel.objects.filter(user = request.user, id = id)
-            if(product.exists() == False):
-                return JsonResponse({'msg' : 'Product with this id doesnot exist'}, status = 404)
-            updateFields = list(data.keys())
-            product = productModel.objects.get(id = id, user = request.user)
-            product.productTitle = data.get('productTitle')
-            product.productDescription = data.get('productDescription')
-            product.productPrice = data.get('productPrice')
-            product.productCategory = data.get('productCategory')
-            product.productStock = data.get('productStock')
-            for img in images:
-                productImageModel.objects.update_or_create(productId = product, productImage = img)
-            product.save(force_update=True, update_fields = updateFields)
-            return JsonResponse({"msg" : "Updated Successfully"}, status = 200)
-        else:return JsonResponse({"msg":" Please Login with admin credentials"}, status = 401)
-    else:return JsonResponse({"msg":"Invalid Method"} ,status = 405) 
+    if not request.body:
+        return JsonResponse({"msg" : "Please use the proper json format to send the data"}, status = 400)
+    id = request.GET.get('id')
+    images = request.FILES.getlist('productImage')
+    print(len(images))
+    if id == None:
+        return JsonResponse({'msg': 'Please tell which product you want to update'}, status =200)
+    data = request.POST
+    if len(images) == 0 or len(images) >= 3:
+        return JsonResponse({'msg': 'Images of product is required and should be atmost 3'}, status =400)
+    if not request.FILES['productImage'].content_type in ['image/png','image/jpeg','image/jpg']:
+        return JsonResponse({'msg' : 'Image should have a valid format'},status = 400)
+    if not data.get('productCategory') in ['0','1','2','3']:
+        return JsonResponse({'msg': 'Please select a valid category'}, status =400)
+    product = productModel.objects.filter(user = request.user, id = id)
+    if(product.exists() == False):
+        return JsonResponse({'msg' : 'Product with this id doesnot exist'}, status = 404)
+    updateFields = list(data.keys())
+    product = productModel.objects.get(id = id, user = request.user)
+    product.productTitle = data.get('productTitle')
+    product.productDescription = data.get('productDescription')
+    product.productPrice = data.get('productPrice')
+    product.productCategory = data.get('productCategory')
+    product.productStock = data.get('productStock')
+    for img in images:
+        productImageModel.objects.update_or_create(productId = product, productImage = img)
+    product.save(force_update=True, update_fields = updateFields)
+    return JsonResponse({"msg" : "Updated Successfully"}, status = 200)
 
+
+@allowed_methods(['DELETE'])
+@user_type('admin')
 def deleteProduct(request):
-    if request.method == 'DELETE':
-        if  request.user.is_authenticated and request.user.is_staff == True:
-            message = request.GET.get('id')
-            if message == None:
-                return JsonResponse({'msg': 'Please tell which product you want to delete'}, status =200)
-            product = productModel.objects.filter(user = request.user, isDeleted = False, id = message)
-            if (product.exists()):
-                product.isDeleted = True
-                return JsonResponse({"msg":"Deleted Successfully"}, status = 200) 
-            else:return JsonResponse({'msg' : 'Product does not exist'}, status = 400)
-        return JsonResponse({"msg":"No Active User"}, status = 401) 
-    else:
-           return JsonResponse({"msg":"Invalid Method"} ,status = 405) 
-
+    message = request.GET.get('id')
+    if message == None:
+        return JsonResponse({'msg': 'Please tell which product you want to delete'}, status =200)
+    product = productModel.objects.get(user = request.user, isDeleted = False, id = message)
+    product.isDeleted = True
+    product.save()
+    return JsonResponse({"msg":"Deleted Successfully"}, status = 200) 
+        
+        
+@allowed_methods(['GET'])
 def productCategories(request):
-    if request.method == 'GET':
-        if request.user.is_authenticated:
-            categories = productModel.Category.labels
-            return JsonResponse({'categories': categories}, status = 200)
-        else:return JsonResponse({'msg' : 'Please login with admin credentials'}, status = 401)
-    else:return JsonResponse({"msg":"Invalid Method"} ,status = 405)
+    categories = productModel.Category.labels
+    return JsonResponse({'categories': categories}, status = 200)
 
+
+@allowed_methods(['GET'])
+@user_type('admin')
 def statusFilter(request):
-    if request.method == 'GET':
-        if request.user.is_authenticated:
-            status = ['Placed', 'Dispatched', 'Shipped', 'Delievered']
-            return JsonResponse({'status': status}, status = 200)
-        else:return JsonResponse({'msg' : 'Please login with admin credentials'}, status = 401)
-    else:return JsonResponse({"msg":"Invalid Method"} ,status = 405)
+    status = ['Placed', 'Dispatched', 'Shipped', 'Delievered']
+    return JsonResponse({'status': status}, status = 200)
+
 
 def orderManagement(request):
     if request.method == 'GET':
@@ -134,9 +124,9 @@ def orderManagement(request):
             product = []
             message = request.GET.get('status')
             if  message in ['0','1','2','3']:
-                productPurchased = productManagementModel.objects.all().filter(cart__cartStatus = message)
+                productPurchased = productManagementModel.objects.all().filter(cart__cartStatus = message).order_by('-created_at')
             else:
-                productPurchased = productManagementModel.objects.all()
+                productPurchased = productManagementModel.objects.all().order_by('-created_at')
             for item in productPurchased:
                 productData = {
                     'user' : item.cart.user.email,
@@ -144,12 +134,13 @@ def orderManagement(request):
                     'productStatus': cartModel.Status(item.cart.cartStatus).label,
                     'productTitle':item.cart.productId.productTitle,
                     'productQuantity':item.cart.productQuantity,  
-                    'productPrice':item.price
+                    'productPrice':item.cart.productId.productPrice,
+                    'totalPrice':item.price
                 }
                 product.append(productData)
             return JsonResponse(list(product), safe=False,status = 200)
         else:return JsonResponse({'msg' : 'Please Login with admin credentials'}, status =401)
-
+        
     elif request.method == 'PATCH':
         if request.user.is_authenticated and request.user.is_staff :
             message = request.GET.get('status')
@@ -162,11 +153,12 @@ def orderManagement(request):
                 else:return JsonResponse({'msg' : 'Cart with this id does not exists'}, 400)
             else:return JsonResponse({'msg' : 'Please select a valid status'}, status = 400)
         else:return JsonResponse({'msg' : 'Please Login with admin credentials'}, status =400)   
-
     else:return JsonResponse({"msg":"Invalid Method"} ,status = 405) 
 
+
+@allowed_methods(['GET'])
+@user_type('admin')
 def download_excel_data(request):
-    if request.method == 'GET':
         if request.user.is_authenticated and request.user.is_staff:
             response = HttpResponse(content_type='application/ms-excel')
             response['Content-Disposition'] = 'attachment; filename="Report.xls"'
@@ -195,21 +187,21 @@ def download_excel_data(request):
             wb.save(response)
             return response
         else:return JsonResponse({'msg' : 'Please Login with admin credentials'}, status =400)
-    else:return JsonResponse({"msg":"Invalid Method"} ,status = 405) 
 
+
+@allowed_methods(["GET"])    
+@user_type('admin')
 def dashboard(request):
-    if request.method == 'GET':
-        if request.user.is_authenticated and request.user.is_staff:
-            d = productManagementModel.objects.all()
-            data = {
-                'totalDispatched' : d.filter(cart__cartStatus = 1).aggregate(totalDispatched = Count('id')),
-                'totalPlaced' : d.filter(cart__cartStatus = 0).aggregate(totalPlaced = Count('id')),
-                'totalDelievered' : d.filter(cart__cartStatus = 3).aggregate(totalDelievered = Count('id')),
-                'totalShipped' : d.filter(cart__cartStatus = 2).aggregate(totalShipped = Count('id')),
-                'totalUsers': CustomUser.objects.all().aggregate(totalUsers = Count('id')),
-                'totalOrders': d.aggregate(totalOrders = Count('id')),
-                'totalRevenue' : d.aggregate(totalRevenue = Sum('price')),
-            }
-            return JsonResponse(data , status = 200)
-        else:return JsonResponse({'msg' : 'Please Login with admin credentials'}, status =400)
-    else:return JsonResponse({"msg":"Invalid Method"} ,status = 405) 
+    d = productManagementModel.objects.all()
+    data = {
+        'totalDispatched' : d.filter(cart__cartStatus = 1).aggregate(totalDispatched = Count('id')),
+        'totalPlaced' : d.filter(cart__cartStatus = 0).aggregate(totalPlaced = Count('id')),
+        'totalDelievered' : d.filter(cart__cartStatus = 3).aggregate(totalDelievered = Count('id')),
+        'totalShipped' : d.filter(cart__cartStatus = 2).aggregate(totalShipped = Count('id')),
+        'totalUsers': CustomUser.objects.aggregate(totalUsers = Count('id')),
+        'totalOrders': d.aggregate(totalOrders = Count('id')),
+        'totalRevenue' : d.aggregate(totalRevenue = Sum('price')),
+    }
+    return JsonResponse(data , status = 200)
+
+

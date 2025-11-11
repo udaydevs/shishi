@@ -1,6 +1,12 @@
 from django.db import models
 from authen.models import CustomUser
 
+class Categories(models.Model):
+    category = models.CharField(max_length=15)
+
+class paymentMethods(models.Model):
+    paymentType = models.CharField(max_length=30)
+
 class productModel(models.Model):
     class Category(models.IntegerChoices):
         Analgesics = 0,'Analgesics'
@@ -12,19 +18,17 @@ class productModel(models.Model):
     productDescription = models.TextField(max_length=600)
     productPrice = models.IntegerField()
     productStock = models.IntegerField()
-    created_at = models.DateTimeField(auto_now=True)
-    updated_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     isDeleted = models.BooleanField(default=False)
     productCategory =  models.PositiveSmallIntegerField(
         choices=Category.choices,
-        default=Category.Analgesics
     )
-    
+
 class productImageModel(models.Model):
     productId = models.ForeignKey(productModel, on_delete=models.CASCADE)
     productImage = models.ImageField(upload_to='productImages/')
     isDeleted = models.BooleanField(default=False)
-
 
 class cartModel(models.Model):
     class Status(models.IntegerChoices):
@@ -33,6 +37,7 @@ class cartModel(models.Model):
         Dispatched = 1,'Dispatched'
         Shipped = 2,'Shipped'
         Delieved = 3, 'Delivered'
+        Canceled = 4,'Canceled'
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     productId = models.ForeignKey(productModel, on_delete= models.CASCADE)
     productQuantity = models.IntegerField(default=1)
@@ -46,7 +51,5 @@ class cartModel(models.Model):
 
 class productManagementModel(models.Model):
     cart = models.ForeignKey(cartModel, on_delete=models.CASCADE)
-    created_at = models.DateField(auto_now=True)
+    created_at = models.DateField(auto_now_add=True)
     price = models.BigIntegerField(default=0)
-
-
