@@ -141,13 +141,17 @@ SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_SAMESITE = 'None'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
-
-
-
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5500',
     'http://127.0.0.1:5500',
     'http://127.0.0.1:3000',
-    'http://10.21.96.152:3000',
+    'http://10.21.96.12:3000',
     'https://2746e28be965.ngrok-free.app'
 ]
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'udaysinghno2005@gmail.com'
+EMAIL_HOST_PASSWORD = 'dtev acuh prrs ohov'

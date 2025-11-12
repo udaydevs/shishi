@@ -2,7 +2,7 @@ from django.db import models
 from authen.models import CustomUser
 
 class Categories(models.Model):
-    category = models.CharField(max_length=15)
+    category = models.CharField(max_length=55)
 
 class paymentMethods(models.Model):
     paymentType = models.CharField(max_length=30)
@@ -30,10 +30,10 @@ class cartModel(models.Model):
         Dispatched = 1,'Dispatched'
         Shipped = 2,'Shipped'
         Delieved = 3, 'Delivered'
-        Canceled = 4,'Canceled'
+        Canceled = 4,'Cancelled'
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     productId = models.ForeignKey(productModel, on_delete= models.CASCADE)
-    productQuantity = models.IntegerField(default=1)
+    productQuantity = models.IntegerField(default=0)
     added_at = models.DateField(auto_now=True)
     isDeleted = models.BooleanField(default=False)
     purchased = models.BooleanField(default=False)

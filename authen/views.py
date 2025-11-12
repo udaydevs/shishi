@@ -3,7 +3,10 @@ from django.contrib.auth import authenticate, login, logout
 from adminPortal.decorators import user_type, allowed_methods
 from .models import  CustomUser, userImageModel
 from .functions import check_regex
-from .constants import mailRegex, passRegex,phoneNumberRegex ,dataFields, updateDataFields
+from .constants import mailRegex, passRegex,phoneNumberRegex 
+from django.core.mail import send_mail
+from django.conf import settings
+
 import json
 
 
@@ -47,6 +50,7 @@ def signUp(request):
 
             for img in request.FILES.getlist('profilePhoto'):
                 userImageModel.objects.create(profilePhoto = img, userId = user)
+            send_mail('Welcome to Shishi', "Registered Successfully with Shishi", settings.EMAIL_HOST_USER, [data.get('email')])
             return JsonResponse({"msg" : "User Created Successfully"}, status = 201)
     else:
            return JsonResponse({"msg":"Invalid Method"} ,status = 405) 
@@ -118,4 +122,3 @@ def profile(request):
         else:return JsonResponse({"msg" : "Please Log In "},status = 401)
 
     else:return JsonResponse({"msg" : "Invalid Method"}, status= 405)      
-
