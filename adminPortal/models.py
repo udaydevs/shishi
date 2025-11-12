@@ -8,11 +8,6 @@ class paymentMethods(models.Model):
     paymentType = models.CharField(max_length=30)
 
 class productModel(models.Model):
-    class Category(models.IntegerChoices):
-        Analgesics = 0,'Analgesics'
-        Antibiotics = 1, 'Antibiotics'
-        Antifungals = 2, 'Antifungals'
-        Antihistamines = 3, 'Antihistamines'
     productTitle = models.CharField(max_length=230)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     productDescription = models.TextField(max_length=600)
@@ -21,9 +16,7 @@ class productModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     isDeleted = models.BooleanField(default=False)
-    productCategory =  models.PositiveSmallIntegerField(
-        choices=Category.choices,
-    )
+    productCategory =  models.ForeignKey(Categories, on_delete=models.CASCADE)
 
 class productImageModel(models.Model):
     productId = models.ForeignKey(productModel, on_delete=models.CASCADE)

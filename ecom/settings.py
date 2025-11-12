@@ -141,9 +141,13 @@ SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_SAMESITE = 'None'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
+
+
+
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5500',
     'http://127.0.0.1:5500',
     'http://127.0.0.1:3000',
-    'http://10.21.96.152:3000'
+    'http://10.21.96.152:3000',
+    'https://2746e28be965.ngrok-free.app'
 ]
