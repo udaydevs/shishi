@@ -6,7 +6,6 @@ from .functions import check_regex
 from .constants import mailRegex, passRegex,phoneNumberRegex 
 from django.core.mail import send_mail
 from django.conf import settings
-
 import json
 
 
@@ -19,9 +18,9 @@ def signUp(request):
         if not request.body:
             return JsonResponse({"msg" : "Please Use the proper json format to send the data"}, status = 400)
         data = request.POST
-        if (check_regex(mailRegex, data.get('email')) is None ):
+        if (data.get('email')) is None or (check_regex(mailRegex, data.get('email')) is None ):
             return JsonResponse({"msg" : "Email should have a proper format"}, status = 400)
-        if  ((check_regex(passRegex, data.get('password')) is None)):
+        if (data.get('password')) is None ((check_regex(passRegex, data.get('password')) is None)):
             return JsonResponse({"msg" : "Use valid pattern Password  (Make sure you are giving all the required field)"}, status = 400)
         if (data.get('password') != data.get('confirmPassword')):
             return JsonResponse({ "msg" : "Confirm password should be same as password or confirm password field is missing"}, status = 400)
@@ -71,6 +70,7 @@ def signIn(request):
         else:return JsonResponse({"msg":"Wrong Credentials"}, status = 401)
     else:return JsonResponse({"msg":"Invalid Method"} ,status = 405) 
 
+
 def signOut(request):
     if request.method == 'DELETE':
         if request.user.is_authenticated:
@@ -88,6 +88,12 @@ def profile(request):
                 if(user.exists() == False):
                     return JsonResponse({'msg' : 'User doesnot exist'}, status = 404)
                 data = request.POST
+                if not data.get('gender') in ['0','1','2']:
+                    return JsonResponse({"msg" : "Gender choice does not match"}, status = 400)
+                if  ((check_regex(phoneNumberRegex, data.get('phoneNo')) is None)):
+                    return JsonResponse({"msg" : "Use valid pattern Password  (Make sure you are giving all the required field)"}, status = 400)
+                if len(request.FILES.getlist('ProfilePhoto')) > 1:
+                    return JsonResponse({'msg' : 'Image should not more than 1'},status = 400)
                 if not data.get('gender') in ['0','1','2']:
                     return JsonResponse({"msg" : "Gender choice does not match"}, status = 400)
                 user = CustomUser.objects.get(email = request.user)

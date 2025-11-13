@@ -1,10 +1,13 @@
 from django.http import JsonResponse, HttpResponse
 from .models import productModel, productImageModel, productManagementModel, cartModel, Categories
 from authen.models import CustomUser
-from .constants import productFields
 from .decorators import user_type, allowed_methods
 from django.db.models import Sum,Count
-import  xlwt,json
+import  xlwt, json
+
+maxImage = 3
+minImage = 0
+contentType = ['image/png','image/jpeg','image/jpg', 'image/webp']
 
 def product(request):
     if request.method == 'GET':
@@ -42,12 +45,12 @@ def product(request):
 
             if not title or len(title) > 50:
                 return JsonResponse({'msg': 'Invalid title or too long'}, status=400)
-            if len(image) == 0 or len(image) > 3:
+            if len(image) == minImage or len(image) > maxImage:
                 return JsonResponse({'msg': 'Images are required (max 3)'}, status=400)
-            if not request.FILES['productImage'].content_type in ['image/png','image/jpeg','image/jpg', 'image/webp']:
+            if not request.FILES['productImage'].content_type in contentType:
                 return JsonResponse({'msg' : 'Image should have a valid format(jpg, png, jpeg, webp) '},status = 400)
             
-            if not price or not price.isdigit() or int(price) < 1:
+            if not price:
                 return JsonResponse({'msg': 'Invalid price'}, status=400)
             
             if not category or not Categories.objects.filter(id=category).exists():
@@ -79,11 +82,11 @@ def updateProduct(request):
     if not productModel.objects.filter(id=id, user=request.user, isDeleted=False).exists():
         return JsonResponse({'msg': 'Product not found'}, status=404)
     product= productModel.objects.get(id=id, user=request.user, isDeleted=False)
-    if len(images) > 0:
-        if len(images) > 3:
+    if len(images) > minImage:
+        if len(images) > maxImage:
             return JsonResponse({'msg': 'Too many images'}, status=400)
         for img in images:
-            if img.content_type not in ['image/png','image/jpeg','image/jpg', 'image/webp']:
+            if img.content_type not in contentType:
                 return JsonResponse({'msg': 'Invalid image format'}, status=400)
     productImageModel.objects.filter(productId=product).update(isDeleted=True)
     for img in images:

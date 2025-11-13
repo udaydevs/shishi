@@ -28,9 +28,9 @@ MEDIA_URL = ''
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', '') != False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['keven-submissive-unmystically.ngrok-free.dev']
 
 # Application definition
 
@@ -146,6 +146,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5500',
     'http://127.0.0.1:3000',
     'http://10.21.96.12:3000',
+    'http://192.168.1.31:5500',
     'https://2746e28be965.ngrok-free.app'
 ]
 
