@@ -88,7 +88,7 @@ DATABASES = {
         'NAME': os.getenv('DB_NAME'),
         'USER' : os.getenv('USER_NAME'),
         'PASSWORD' : os.getenv('DB_PASS'),
-        'HOST': 'sql100.infinityfree.com',
+        'HOST': 'mysql.railway.internal',
         'PORT': '3306'
     }
 }
