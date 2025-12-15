@@ -71,3 +71,10 @@ DJANGO_DEBUG=False
 python manage.py makemigrations
 python manage.py migrate
 ```
+
+
+### 6. Run the development server
+
+```bash
+python manage.py runserver
+```
