@@ -26,7 +26,7 @@ This project is primarily built using the following technologies:
 | Category | Technology | Description |
 | :--- | :--- | :--- |
 | **Backend** | Python (3.8+) | The primary programming language. |
-| **Framework** | Django | The robust, high-level web framework. |
+| **Framework** | Django | The robust, high-level web framework. |### 2. Create Environment File
 | **Dependencies** | requirements.txt | All necessary Python packages are managed here. |
 | **Database** | MySQL | Used for data storage. |
 
@@ -37,3 +37,37 @@ This project is primarily built using the following technologies:
 ```bash
 git clone [https://github.com/udaydevs/shishi.git](https://github.com/udaydevs/shishi.git)
 cd shishi
+```
+
+### 2. Create and activate a Virtual Environment
+
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+
+### 3. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+
+### 4. Configure Environment Variables
+
+```env
+DB_PASS='bBuGKiudweflQyvMAbdMfZHXstUEIxPZ'
+DB_NAME = 'railway'
+DATABASE_URL = 'mysql://root:bBuGKiudweflQyvMAbdMfZHXstUEIxPZ@metro.proxy.rlwy.net:30335/railway'
+USER_NAME='root'
+SECRET_KEY ='django-insecure-oq3g(malkb#_1y&!s^pa=+ptssb&bxwti_ox#!aijcr5m-&2v6'
+DJANGO_DEBUG=False
+```
+
+### 5. Database Migrations
+
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
