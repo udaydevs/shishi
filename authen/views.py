@@ -20,7 +20,7 @@ def signUp(request):
         data = request.POST
         if (data.get('email')) is None or (check_regex(mailRegex, data.get('email')) is None ):
             return JsonResponse({"msg" : "Email should have a proper format"}, status = 400)
-        if (data.get('password')) is None ((check_regex(passRegex, data.get('password')) is None)):
+        if (data.get('password')) is None or ((check_regex(passRegex, data.get('password')) is None)):
             return JsonResponse({"msg" : "Use valid pattern Password  (Make sure you are giving all the required field)"}, status = 400)
         if (data.get('password') != data.get('confirmPassword')):
             return JsonResponse({ "msg" : "Confirm password should be same as password or confirm password field is missing"}, status = 400)
